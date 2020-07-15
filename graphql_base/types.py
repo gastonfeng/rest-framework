@@ -25,8 +25,12 @@ def odoo_attr_resolver(attname, default_value, root, info, **args):
     if value is False:
         if not isinstance(field, fields.Boolean):
             return None
+    elif isinstance(field, fields.Date):
+        return fields.Date.from_string(value)
     elif isinstance(field, fields.Datetime):
-        return fields.Datetime.context_timestamp(root, value)
+        return fields.Datetime.context_timestamp(root, fields.Datetime.from_string(value))
+    elif isinstance(field, fields.Binary):
+        return value.decode()
     return value
 
 
@@ -41,3 +45,38 @@ class OdooObjectType(graphene.ObjectType):
         return super(OdooObjectType, cls).__init_subclass_with_meta__(
             default_resolver=default_resolver, **options
         )
+
+
+class JSON(graphene.Scalar):
+    """
+    The `JSON` scalar type represents JSON values as specified by
+    [ECMA-404](http://www.ecma-international.org/
+    publications/files/ECMA-ST/ECMA-404.pdf).
+    """
+
+    @staticmethod
+    def identity(value):
+        if isinstance(value, (str, bool, int, float)):
+            return value.__class__(value)
+        elif isinstance(value, (list, dict)):
+            return value
+        else:
+            return None
+
+    serialize = identity
+    parse_value = identity
+
+    @staticmethod
+    def parse_literal(ast):
+        if isinstance(ast, (StringValue, BooleanValue)):
+            return ast.value
+        elif isinstance(ast, IntValue):
+            return int(ast.value)
+        elif isinstance(ast, FloatValue):
+            return float(ast.value)
+        elif isinstance(ast, ListValue):
+            return [JSON.parse_literal(value) for value in ast.values]
+        elif isinstance(ast, ObjectValue):
+            return {field.name.value: JSON.parse_literal(field.value) for field in ast.fields}
+        else:
+            return None

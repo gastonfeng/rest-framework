@@ -1,6 +1,6 @@
 # Copyright 2018 ACSONE SA/NV
 # License LGPL-3.0 or later (http://www.gnu.org/licenses/lgpl).
-
+import logging
 import re
 from functools import partial
 
@@ -38,7 +38,7 @@ class GraphQLControllerMixin(object):
         # information provided by content_type
         content_type = req.mimetype
         if content_type == "application/graphql":
-            return {"query": req.data.decode("utf8")}
+            return load_json_body(req.data.decode("utf8"))
         elif content_type == "application/json":
             return load_json_body(req.data.decode("utf8"))
         elif content_type in (
@@ -88,6 +88,8 @@ class GraphQLControllerMixin(object):
 
     def _handle_graphql_request(self, schema):
         data = self._parse_body()
+        # data={'query':data}
+        logging.info(data)
         return self._process_request(schema, data)
 
     def _handle_graphiql_request(self, schema):

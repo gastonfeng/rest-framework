@@ -16,6 +16,7 @@ from odoo.addons.graphql_base import OdooObjectType
 class Country(OdooObjectType):
     code = graphene.String(required=True)
     name = graphene.String(required=True)
+    contacts = graphene.List(graphene.NonNull(lambda: Partner))
 
 
 class Partner(OdooObjectType):
